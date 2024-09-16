@@ -1,6 +1,6 @@
 
 # use this Makefile as base in your project by running
-# git remote add make https://github.com/spraakbanken/python-pdm-make-conf
+# git remote add make https://github.com/spraakbanken/python-uv-make-conf
 # git fetch make
 # git merge --allow-unrelated-histories make/main
 #
@@ -57,23 +57,23 @@ help:
 	@echo ""
 
 PLATFORM := `uname -o`
-REPO := "sparv-sbx-emotional-classification"
-PROJECT_SRC := "sparv-sbx-sentence-emotional-classification-kb-emoclass/src"
+REPO := sparv-sbx-emotional-classification
+PROJECT_SRC := "packages/sparv-sbx-sentence-emotional-classification-kb-emoclass/src"
 
 ifeq (${VIRTUAL_ENV},)
   VENV_NAME = .venv
-  INVENV = pdm run
+  INVENV = uv run
 else
   VENV_NAME = ${VIRTUAL_ENV}
   INVENV =
 endif
 
-default_cov := "--cov=${PROJECT_SRC}"
+default_cov := "--cov"
 cov_report := "term-missing"
 cov := ${default_cov}
 
-all_tests := sparv-sbx-sentence-emotional-classification-kb-emoclass/tests
-tests := sparv-sbx-sentence-emotional-classification-kb-emoclass/tests
+all_tests := packages/sparv-sbx-sentence-emotional-classification-kb-emoclass/tests
+tests := packages/sparv-sbx-sentence-emotional-classification-kb-emoclass/tests
 
 info:
 	@echo "Platform: ${PLATFORM}"
@@ -83,16 +83,16 @@ dev: install-dev
 
 # setup development environment
 install-dev:
-	pdm install --dev
+	uv sync --dev
 
 # setup production environment
 install:
-	pdm sync --prod
+	uv sync --no-dev
 
-lock: pdm.lock
+lock: uv.lock
 
-pdm.lock: pyproject.toml
-	pdm lock
+uv.lock: pyproject.toml
+	uv lock
 
 .PHONY: test
 test:
@@ -101,7 +101,7 @@ test:
 .PHONY: test-w-coverage
 # run all tests with coverage collection
 test-w-coverage:
-	${INVENV} pytest -vv ${cov}  --cov-report=${cov_report} ${all_tests}
+	${INVENV} pytest -vv ${cov} --cov-report=${cov_report} ${all_tests}
 
 .PHONY: doc-tests
 doc-tests:
@@ -139,7 +139,7 @@ check-fmt:
 	${INVENV} ruff format --check ${PROJECT_SRC} ${tests}
 
 build:
-	pdm build
+	uvx --from build pyproject-build --installer uv
 
 branch := "main"
 publish:
@@ -150,8 +150,8 @@ publish:
 prepare-release: update-changelog tests/requirements-testing.lock
 
 # we use lock extension so that dependabot doesn't pick up changes in this file
-tests/requirements-testing.lock: pyproject.toml pdm.lock
-	pdm export --dev --format requirements --without-hashes --output $@
+tests/requirements-testing.lock: pyproject.toml
+	uv export --dev --format requirements-txt --no-hashes --output-file $@
 
 .PHONY: update-changelog
 update-changelog: CHANGELOG.md
